@@ -1,0 +1,61 @@
+<div class="card flex justify-content-center">
+    <p-dialog  
+        [modal]="true" 
+        [(visible)]="visible" 
+        closable="false"
+        [dismissableMask]="false">
+        
+        <ng-template pTemplate="header">
+            <div class="header-container">
+                <h3><i *ngIf="visibleTable" (click)="goBack()" class="pi pi-arrow-left icon-back"></i>
+                     <i class="pi pi-calculator"></i> Ürün maliyet hesaplaması</h3>
+            </div>
+        </ng-template>
+
+        <div *ngIf="!visibleTable" class="button-container">
+            <p-button label="Adicionar Custos" (onClick)="addCost()" icon="pi pi-plus"></p-button>
+            <p-button label="Custos Adicionados" (onClick)="registeredCosts()" icon="pi pi-eye"></p-button>
+        </div>
+
+        <p-table *ngIf="visibleTable"
+            [value]="allProductCostTotal"
+            [rows]="10"
+            [paginator]="true"
+            [globalFilterFields]="['name', 'totalPrice', 'dateCreate']"
+            [tableStyle]="{ 'min-width': '50rem' }" 
+            dataKey="idProductTotalCost"
+            [showCurrentPageReport]="true">
+            
+            <ng-template pTemplate="header">
+                <tr>
+                    <th pSortableColumn="dateCreate">Oluşturulma Tarihi <p-sortIcon field="dateCreate"></p-sortIcon></th>
+                    <th pSortableColumn="name">Ürün Adı <p-sortIcon field="name"></p-sortIcon></th>
+                    <th pSortableColumn="totalPrice">Toplam Maliyet <p-sortIcon field="totalPrice"></p-sortIcon></th>
+                    <th>Ação</th>
+                </tr>
+            </ng-template>
+            
+            <ng-template pTemplate="body" let-cost>
+                <tr>
+                    <td>{{ cost.dateCreate | date: 'dd/MM/yyyy' }}</td>
+                    <td>{{ cost.productName }}</td>
+                    <td>{{ cost.totalProductCost | currency: 'BRL' }}</td>
+                    <td>
+                        <p-button pRipple icon="pi pi-pencil" class="mr-2" [rounded]="true" [outlined]="true" severity="success"
+                        [style]="{
+                         'margin':'5px',
+                         height: '40px',
+                         width: '40px'
+                        }" (click)="getProductCost(cost.idProductTotalCost)"></p-button>
+                    </td>
+                </tr>
+            </ng-template>
+            
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td colspan="8">Ek maliyet yok.</td>
+                </tr>
+            </ng-template>
+        </p-table>
+    </p-dialog>
+</div>

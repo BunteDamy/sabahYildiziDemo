@@ -1,0 +1,355 @@
+import { Component, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
+import { ButtonModule } from 'primeng/button';
+import { FileSelectEvent, FileUploadModule, FileUpload } from 'primeng/fileupload';
+import { Table, TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
+import { RatingModule } from 'primeng/rating';
+import { ToolbarModule } from 'primeng/toolbar';
+import { ToastModule } from 'primeng/toast';
+import { InputTextModule } from 'primeng/inputtext';
+import { DialogModule } from 'primeng/dialog';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { DropdownModule } from 'primeng/dropdown';
+import { FormGroup, FormBuilder, FormsModule , ReactiveFormsModule, Validators} from '@angular/forms';
+import { CalendarModule } from 'primeng/calendar';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { Sale } from '../../../models/sales/sale';
+import { CommonModule } from '@angular/common';
+import { SalesService } from '../../../services/sales/sales.service';
+import { ConfirmationService, MessageService } from 'primeng/api';
+import { RegisterHandlers } from './register-handlers';
+import { Title } from '@angular/platform-browser';
+import { NotificationService } from '../../../services/shared/messages/notification.service';
+import { Product } from '../../../models/products/products';
+import { ProductsService } from '../../../services/products/products.service';
+import { LoadingComponent } from '../../shared/components/loading/loading.component';
+import { UploadService } from '../../../services/upload/upload.service';
+@Component({
+  selector: 'app-register-sales',
+  standalone: true,
+  imports: [ButtonModule,
+    TableModule,
+    TagModule,
+    ToastModule, 
+    RatingModule, 
+    FormsModule,
+    ReactiveFormsModule,
+    CommonModule,
+    ToolbarModule,
+    DialogModule,
+    ConfirmDialogModule,
+    DropdownModule,
+    InputNumberModule,
+    CalendarModule,
+    FileUploadModule,
+    LoadingComponent,
+    InputTextModule],
+  templateUrl: './register-sales.component.html',
+  styleUrl: './register-sales.component.scss',
+  providers: [MessageService, NotificationService, ConfirmationService],
+  encapsulation: ViewEncapsulation.None,
+})
+export class RegisterSalesComponent implements OnInit {
+  @ViewChild('dt') dataTable!: Table;
+  @ViewChild(LoadingComponent) loadingComponent!: LoadingComponent;
+  @ViewChild(FileUpload) fileUpload!: FileUpload; 
+
+  sales: Sale[] = [];
+  allSales: Sale[] = [];
+  selectedSales: any[] = [];
+  productObject: Product[] = [];
+  loadingTable = false;
+  loadingButton = false;
+  messageTable = 'Nenhum dado encontrado';
+  isEditMode: boolean = false;
+  sale! : Sale;
+  saleId: number = 0;
+  isViewing: boolean = false;
+  search = '';
+  selectedProduct!: Product;
+  loadingUpload = false;
+
+  createForm: FormGroup = this.fb.group({
+    dateSale:['',Validators.required],
+    nameProduct: ['', Validators.required],
+    details: [''],
+    quantity: ['',Validators.required],
+    paySelect: [''],
+    price: ['',Validators.required],
+    createDate: [{value: '', disabled: true}],
+    editDate: [{value: '', disabled: true}] 
+  })
+
+  constructor(
+    private fb: FormBuilder,
+    private salesService: SalesService,
+    private upload: UploadService,
+    private productService: ProductsService,
+    public handlers: RegisterHandlers,
+    private titleService: Title,
+    private confirmationService: ConfirmationService,
+    private notificationService: NotificationService
+  ){
+    this.titleService.setTitle('Registrar Vendas');
+  }
+
+  ngOnInit() {
+    this.getallSale()
+    this.getProduct()
+  }
+  
+  ngAfterViewInit() {
+    this.loadingComponent.show();
+  }
+
+  filterSales(searchText: string) {
+    this.sales = this.allSales.filter(
+      (item) =>
+        (item.dateSale && item.dateSale.includes(searchText)) ||
+        (item.dateCreate && item.dateCreate.includes(searchText)) ||
+        (item.name && item.name.toLocaleLowerCase().includes(searchText)) ||
+        (item.details && item.details.toLocaleLowerCase().includes(searchText)) ||
+        item.quantity.toString().includes(searchText) ||
+        item.price.toString().includes(searchText) ||
+        (item.pay !== undefined &&
+          ((item.pay && 'Paralı'.includes(searchText)) ||
+            (!item.pay && 'Askıda (TL)'.includes(searchText))))
+    );
+  }
+
+  filterGlobal(event: any): void {
+    this.search = (event.target as HTMLInputElement).value.trim().toLowerCase();
+    this.filterSales(this.search);
+  }
+
+  getallSale(){
+    this.salesService.getAllSales().subscribe({
+      next:(response) => {
+        this.allSales = response.data.flat()
+        if (this.search) {
+          this.filterSales(this.search); 
+        } else {
+          this.sales = [...this.allSales];
+        }
+        this.loadingComponent.hide();
+      },
+      error: () => {
+        this.messageTable;
+        this.loadingComponent.hide();
+      }
+    })
+  }
+
+  getProduct(){
+    this.productService.getAllProducts().subscribe(
+      (response) => {
+        if (response) {
+          this.productObject = response.data;
+        }
+      }
+    );
+  }
+
+  onProductSelect(event: any){
+    this.selectedProduct = event.value; 
+  }
+
+  deleteSale(id: number) { 
+    this.confirmationService.confirm({
+      message: 'Tem certeza que deseja excluir esse registro?',
+      header: 'Onaylamak',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sim',  
+      rejectLabel: 'Não',
+      accept: () => {
+        this.loadingTable = true;
+        this.salesService.deleteSale(id).subscribe({
+          next:() => {
+              this.notificationService.showSuccessToast('Registro excluido com sucesso!')
+              this.loadingTable = false;
+              this.getallSale()
+          },
+          error: (error) => {
+            const errorMessage = error?.error ?? 'İşlem sırasında bir hata oluştu.';
+            this.notificationService.showErrorToast(errorMessage)
+            this.loadingTable = false;
+          }  
+        })
+      }
+    });
+  }
+
+  dialogEdit(sale: Sale){
+    this.isEditMode = true;
+    this.isViewing = false;
+    this.handlers.headerDialog = 'Editar Venda'
+    this.handlers.handleInsertDialog()
+    if(!!sale.id){
+      this.saleId = sale.id
+    }
+
+    const payValue = this.handlers.situation.find(s => s.value === sale.pay);
+    const selectedProduct = this.productObject.find(product => product.id === sale.idProduct);
+    this.createForm.patchValue({
+      dateSale: new Date (sale.dateSale),
+      nameProduct: selectedProduct,
+      details: sale.details,
+      quantity: sale.quantity,
+      paySelect: payValue,
+      price: sale.price,
+    });
+    this.createForm.enable();
+  }
+
+  editSale(form: FormGroup) { 
+    const selectedProduct = form.get('nameProduct')?.value;
+    this.isViewing = false;
+    this.loadingButton = true;
+    this.sale = {
+      id: this.saleId,
+      idProduct: selectedProduct.id,
+      name: selectedProduct.name,
+      dateSale: new Date(form.get('dateSale')?.value).toISOString().split('T')[0],
+      details: form.get('details')?.value,
+      quantity: form.get('quantity')?.value,
+      pay: form.get('paySelect')?.value.value, 
+      price: form.get('price')?.value
+    };
+    this.salesService.updateSale(this.sale, this.saleId).subscribe({
+      next:() => {
+        this.notificationService.showSuccessToast('Venda atualizada com sucesso!')
+        this.handlers.visibleCreate = false;
+        this.loadingButton = false;
+        this.getallSale()
+      },
+      error: (error) => {
+        const errorMessage = error?.error ?? 'İşlem sırasında bir hata oluştu.';
+        this.notificationService.showErrorToast(errorMessage)
+        this.loadingButton = false;
+      }
+    })
+
+  }
+
+  CreateOrEdit(form: FormGroup) {
+    if (this.isEditMode) {
+      this.editSale(form);
+    } else {
+      this.saveNewSale(form);
+    }
+  }
+
+  saveNewSale(form: FormGroup){
+    if (form.invalid) {
+      this.notificationService.showErrorToast('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+    this.loadingButton = true;
+    this.sale = {
+      idProduct : this.selectedProduct.id,
+      idClient: null,
+      name:  this.selectedProduct.name,
+      dateSale: new Date(form.get('dateSale')?.value).toISOString().split('T')[0],
+      details: form.get('details')?.value,
+      quantity: form.get('quantity')?.value,
+      pay: form.get('paySelect')?.value.value, 
+      price: form.get('price')?.value,
+    };
+    this.salesService.postCreateSale(this.sale).subscribe({
+      next:() => {
+        this.notificationService.showSuccessToast('Venda criada com sucesso!')
+        this.handlers.visibleCreate = false;
+        this.loadingButton = false;
+        this.getallSale()
+      },
+      error: (error) => {
+        let errorMessage = 'İşlem sırasında bir hata oluştu.';
+      
+        if (error?.status === 400) {
+          errorMessage = 'Requisição inválida. Verifique os dados informados.';
+        } else if (error?.status === 409) {
+          errorMessage = 'Venda já existe na base.';
+        } else  {
+          errorMessage;
+        }
+        
+        this.notificationService.showErrorToast(errorMessage);
+        this.loadingButton = false;
+        this.getallSale();
+      }
+
+    })
+  }
+
+  getSaleById(id: number){
+    this.isViewing = true; 
+    this.handlers.headerDialog = 'Visualizar Venda';
+    this.handlers.handleInsertDialog();
+    if (!!id) {
+      this.saleId = id;
+    }
+
+    this.salesService.getByIdSale(id).subscribe({
+      next: (response) => {
+        this.createForm.patchValue({
+          nameProduct: this.productObject.find(product => product.id === response.data[0].idProduct),
+          dateSale: response.data[0].dateSale ? new Date(response.data[0].dateSale).toLocaleDateString('pt-BR') : null,
+          details: response.data[0].details,
+          paySelect:  this.handlers.situation.find(option => option.value === response.data[0].pay),
+          price: response.data[0].price,
+          quantity: response.data[0].quantity,
+          createDate: response.data[0].dateCreate ? new Date(response.data[0].dateCreate).toLocaleDateString('pt-BR') : null,
+          editDate: response.data[0].dateEdit ? new Date(response.data[0].dateEdit).toLocaleDateString('pt-BR') : null,
+        });
+        this.createForm.disable();
+      },
+
+      error: (error) => {
+        const errorMessage = error?.error?.message ?? 'İşlem sırasında bir hata oluştu.';
+        this.notificationService.showErrorToast(errorMessage);
+        this.loadingButton = false;
+      }
+    })
+  }
+
+  cancel(){
+    this.handlers.visibleCreate = false;
+  }
+  
+  openCreate() {
+    this.isViewing = false;
+    this.isEditMode = false;
+    this.handlers.headerDialog = 'Criar Venda'
+    this.createForm.reset();
+    this.handlers.handleInsertDialog()
+  }
+
+  onSelect(event: FileSelectEvent) {
+    this.loadingUpload = true;
+    const uploadFile = event.files && event.files.length > 0 ? event.files[0] : null;
+    if (uploadFile) {
+      this.upload.postUploadExcel(uploadFile).subscribe({
+        next: (response: any) => {
+          if (response) {
+            this.notificationService.showSuccessToast('E-tablo başarıyla içe aktarıldı!')
+            this.loadingUpload = false;
+            this.fileUpload.clear();
+            this.getallSale();
+          }
+        },
+        error: (error: any) => {
+          let errorMessage = 'İşlem sırasında bir hata oluştu.';
+      
+          if (error?.status === 400) {
+            errorMessage = 'Geçersiz istek. Elektronik tabloya girilen verileri kontrol edin.';
+          }  else  {
+            errorMessage;
+          }
+          this.notificationService.showErrorToast(errorMessage)
+          this.loadingUpload = false;
+          this.fileUpload.clear();
+        }
+      })
+    }
+  }
+}

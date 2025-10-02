@@ -1,0 +1,34 @@
+<p-toast key="success"></p-toast>
+<p-toast key="error"></p-toast>
+<app-loading></app-loading>
+
+<div class="card">
+    <form [formGroup]="createForm" method="post" (ngSubmit)="postAuthentication(createForm)">
+        <div class="login">
+            <h3>Login</h3>
+            <div>
+                <p-floatLabel>
+                    <input pInputText id="mail" type="text" formControlName="email" />
+                    <label for="mail">Email</label>
+                </p-floatLabel>
+            </div>
+            <div>
+                <p-floatLabel>
+                    <p-password formControlName="password" [toggleMask]="true" [feedback]="false" />
+                    <label for="password">Şifre</label>
+                </p-floatLabel>
+            </div>
+            <div class="button-container">
+                <p-button label="Giriş" icon="pi pi-user" type="submit" [style]="{ 'width': '100%' }" />
+                <p class="forgot-password">Şifreni mi unuttun?</p>
+            </div>
+        </div>
+        
+        <div class="signup">
+            <label for="">Hesabın yok mu?</label>
+            <a [routerLink]="['/register']">
+              <p-button label="Kayıt Ol" icon="pi pi-user-plus" styleClass="p-button-success w-10rem"></p-button>
+            </a>
+          </div>
+    </form>
+</div>

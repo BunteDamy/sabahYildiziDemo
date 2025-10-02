@@ -1,0 +1,63 @@
+import { Component, ViewChild, ViewEncapsulation} from '@angular/core';
+import { FileSelectEvent, FileUpload, FileUploadModule } from 'primeng/fileupload';
+import { ToastModule } from 'primeng/toast';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { CommonModule } from '@angular/common';
+import { Title } from '@angular/platform-browser';
+import { MessageService } from 'primeng/api';
+import { NotificationService } from '../../services/shared/messages/notification.service';
+import { UploadService } from '../../services/upload/upload.service';
+
+@Component({
+  selector: 'app-upload',
+  standalone: true,
+  imports: [
+    FileUploadModule, 
+    ProgressSpinnerModule,
+    ToastModule,
+    CommonModule],
+  templateUrl: './upload.component.html',
+  styleUrl: './upload.component.scss',
+  providers: [MessageService, NotificationService],
+  encapsulation: ViewEncapsulation.None,
+})
+export class UploadComponent {
+  @ViewChild(FileUpload) fileUpload!: FileUpload; 
+  loadingUpload = false;
+  returnMessage = '';
+
+  constructor(private upload: UploadService,
+    private titleService: Title,
+    private notificationService: NotificationService
+  ){
+    this.titleService.setTitle('Dosya içe aktarma');
+  }
+  
+  onSelect(event: FileSelectEvent) {
+    this.loadingUpload = true;
+    const uploadFile = event.files && event.files.length > 0 ? event.files[0] : null;
+    if (uploadFile) {
+      this.upload.postUploadExcel(uploadFile).subscribe({
+        next: (response: any) => {
+          if (response) {
+            this.notificationService.showSuccessToast('E-tablo başarıyla içe aktarıldı!')
+            this.loadingUpload = false;
+            this.fileUpload.clear();
+          }
+        },
+        error: (error: any) => {
+          let errorMessage = 'İşlem sırasında bir hata oluştu.';
+      
+          if (error?.status === 400) {
+            errorMessage = 'Geçersiz istek. Elektronik tabloya girilen verileri kontrol edin.';
+          }  else  {
+            errorMessage;
+          }
+          this.notificationService.showErrorToast(errorMessage)
+          this.loadingUpload = false;
+          this.fileUpload.clear();
+        }
+      })
+    }
+  }
+}

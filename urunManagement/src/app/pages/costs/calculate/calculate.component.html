@@ -1,0 +1,115 @@
+<app-dialog-calculate 
+    (addCostEvent)="addCost()"
+    (editProductCost)="onEditProductCost($event)">
+</app-dialog-calculate>
+<p-toast key="success"></p-toast>
+<p-toast key="error"></p-toast>
+
+<div [hidden]="visibleDialog" class="cost-calculation-container">
+    <h3>Ürün maliyet hesaplaması</h3>
+  
+    <div *ngFor="let cost of productCost; let i = index" class="ingredient-row">
+      <div class="form-inline">
+        <div class="form-row">
+          <label for="userTypes">Bileşen</label>
+          <p-dropdown
+              [filter]="true"
+              [options]="costs"
+              optionLabel="displayName"
+              filterBy="name" 
+              optionValue="id"
+              [(ngModel)]="cost.idCost"
+              [ngModelOptions]="{standalone: true}"
+              placeholder="Selecione um custo"
+              (onChange)="onCostSelect(i, $event.value)"
+              [style]="{'width': '250px'}">
+          </p-dropdown>
+        </div>
+  
+        <div class="form-row">
+          <label>Toplam Fiyat</label>
+          <p-inputNumber 
+            [(ngModel)]="cost.totalProductPrice"
+            [ngModelOptions]="{standalone: true}"
+            prefix="R$ "
+            [readonly]="true">
+          </p-inputNumber>
+        </div>
+  
+        <div class="form-row">
+          <label>Toplam Adet</label>
+          <p-inputNumber 
+            [(ngModel)]="cost.totalQuantity"
+            [ngModelOptions]="{standalone: true}"
+            >
+          </p-inputNumber>
+        </div>
+  
+        <div class="form-row">
+          <label>Gerekli Miktar</label>
+          <p-inputNumber 
+            [(ngModel)]="cost.quantityRequired"
+            [ngModelOptions]="{standalone: true}"
+            useGrouping="true">
+          </p-inputNumber>
+        </div>
+      </div>
+  
+      <div class="custo-ingrediente">
+        <p *ngIf="cost.quantityRequired > 0 && cost.totalQuantity && cost.totalProductPrice">
+          Malzeme maliyeti: {{ calculateIngredientCost(cost) | currency:'BRL' }}
+        </p>
+      </div>
+      <p-divider></p-divider>
+    </div>
+  
+    <div class="buttons">
+      <p-button label="Adicionar Ingrediente" icon="pi pi-plus" (click)="addIngredient()"></p-button>
+      @if(calculateTotalCost() > 0){
+        <p-button label="Salvar Custo Total" icon="pi pi-calculator" (click)="openDialog()" class="p-button-success"></p-button>
+      }
+    </div>
+  
+    <h4>Ürünün toplam maliyeti: {{ calculateTotalCost() | currency:'BRL' }}</h4>
+
+   <p-dialog 
+      [(visible)]="visibleDialogProduct" 
+      [modal]="true" 
+      [style]="{ width: '400px' }"
+      [closable]="false">
+    
+    <div class="form-row">
+      <h3>Maliyeti ürüne bağlayın</h3>
+      <p-dropdown 
+          [options]="products" 
+          [(ngModel)]="selectedProductId" 
+          optionLabel="name" 
+          appendTo="body"
+          optionValue="id" 
+          [style]="{'width': '250px'}"
+          placeholder="Selecione um produto">
+      </p-dropdown>
+      <small 
+      *ngIf="message" 
+      class="p-error"
+      style="color: red; display: block; margin-top: 4px;">
+      Ürün gereklidir.
+    </small>
+    </div>
+
+    <div class="dialog-buttons">
+      <p-button 
+        label="Salvar" 
+        icon="pi pi-save" 
+        (click)="newProductCost()"
+        [loading]="loadingButton"
+        class="p-button-success">
+      </p-button>
+      <p-button 
+        label="Cancelar" 
+        icon="pi pi-times" 
+        (click)="visibleDialogProduct = false">
+      </p-button>
+    </div>
+  </p-dialog>
+</div>

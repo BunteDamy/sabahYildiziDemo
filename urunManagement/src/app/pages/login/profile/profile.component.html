@@ -1,0 +1,98 @@
+<p-toast key="success"></p-toast>
+<p-toast key="error"></p-toast>
+<app-loading></app-loading>
+
+<div class="account-container" [formGroup]="createForm">
+    <div class="profile-image-section">
+        <div class="profile-img-container">
+            <img [src]="imageDefault" alt="Imagem de Perfil" class="profile-img" />
+        </div>
+        <p-fileUpload mode="basic" name="file" accept=".jpg,.png,.webp" maxFileSize="2000000"
+                      chooseIcon="pi pi-upload" chooseLabel="Escolher Imagem" 
+                      (onSelect)="onPhotoSelect($event)" [auto]="true">
+        </p-fileUpload>
+        <p class="upload-info">Yalnızca .jpg, .png uzantıları kabul edilir. Maksimum boyut: 2 MB</p>
+    </div>
+
+    <div class="account-info-section">
+        <div class="section personal-info">
+            <h3>Hesap bilgileri</h3>
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input pInputText formControlName="username" id="username" type="text" readonly />
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input pInputText formControlName="email" id="email" type="email" readonly />
+            </div>
+
+            <div class="form-group">
+                <label for="userTypes">Kullanıcı Türü</label>
+                <p-dropdown
+                    id="userTypes"
+                    [options]="userTypes"
+                    optionLabel="name" 
+                    formControlName="accessLevelId"
+                    [style]="{'width': '100%'}">
+                </p-dropdown>
+            </div>
+        </div>
+
+        <div class="section work-info">
+            <h3>Kişisel bilgiler</h3>
+            <div class="form-group">
+                <label for="firstName" class="font-semibold">Ad</label>
+                <input pInputText formControlName="firstName" id="firstName" type="text" />
+            </div>
+
+            <div class="form-group">
+                <label for="lastName">Soyad</label>
+                <input pInputText formControlName="lastName" id="lastName" type="text" />
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Telefon</label>
+                <p-inputMask id="phone" formControlName="phone" mask="(99) 99999-9999" placeholder="(99) 99999-9999" [style]="{width: '100%'}"/>
+            </div>
+        </div>
+
+        <div class="section address-info">
+            <h3>Adres bilgileri</h3>
+            <div class="form-row" style="display: flex; gap: 5px;">
+                <div class="form-group" style="flex: 1;">
+                    <label for="zipCode">posta kodu</label>
+                    <p-inputMask mask="99999-999"  (onBlur)="getZipCode()" [style]="{width: '360px'}" pInputText formControlName="zipCode" id="zipCode" type="text" />
+                </div>
+
+                <div class="form-group" style="flex: 1;">
+                    <label for="city">Şehir</label>
+                    <input pInputText formControlName="city" id="city" type="text" readonly />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="address">Adres</label>
+                <input pInputText formControlName="address" id="address" type="text" readonly />
+            </div>
+
+            <div class="form-group">
+                <label for="address">Komşu</label>
+                <input pInputText formControlName="neighborhood" id="neighborhood" type="text" readonly />
+            </div>
+            <div class="form-group">
+                <label for="number">Numara</label>
+                <input pInputText formControlName="number" id="number" type="text" />
+            </div>
+
+            <div class="form-group">
+                <label for="state">Durum</label>
+                <input pInputText formControlName="state" id="state" type="text" readonly />
+            </div>
+        </div>
+
+        <div class="button-group">
+            <p-button label="Kaydet" icon="pi pi-check" [loading]="loadingButton" (click)="updateUserProfile(createForm)"></p-button>
+        </div>
+    </div>
+</div>

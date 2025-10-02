@@ -1,0 +1,215 @@
+<p-toast key="success"></p-toast>
+<p-toast key="error"></p-toast>
+<app-loading></app-loading>
+
+<div class="container">
+  <div class="crud">
+    <p-toast></p-toast>
+    <p-toolbar styleClass="mb-4 gap-2">
+      <ng-template pTemplate="left">
+        <p-button pRipple label="Novo" icon="pi pi-plus" class="mr-2" (click)="openCreate()"></p-button>
+        
+        <p-fileUpload 
+          mode="basic" 
+          accept="image/*" 
+          [maxFileSize]="1000000" 
+          label="Import" 
+          chooseLabel="Importar" 
+          class="mr-2 inline-block" 
+          name="demo[]" 
+          fileLimit="1"
+          [disabled]="loadingUpload"
+          (onSelect)="onSelect($event)"
+          accept=".xlsx,.xls"
+          class="file-upload"
+        />
+      
+      </ng-template>
+      <ng-template pTemplate="right">
+        <span class="p-input-icon-left">
+          <i class="pi pi-search"></i>
+          <input 
+            pInputText 
+            type="text" 
+            (input)="filterGlobal($event)" 
+            placeholder="Pesquisar..." />
+        </span>
+      </ng-template>
+    </p-toolbar>
+
+    <p-dialog 
+        header="{{handlers.headerDialog}}"
+        [modal]="true"
+        [draggable]="false"
+        [resizable]="false"
+        [(visible)]="handlers.visibleCreate" 
+        [style]="{ width: '38rem'}"
+        [dismissableMask]="false" >
+      
+      <form
+        [formGroup]="createForm"
+        method="post"
+        (ngSubmit)="CreateOrEdit(createForm)">
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="nameProduct" class="font-semibold"> Nome <span class="required">*</span></label>
+              <p-dropdown 
+                [style]="{width: '384px'}" 
+                id="nameProduct"
+                formControlName="nameProduct" 
+                [options]="productObject" 
+                optionLabel="name"
+                placeholder="Selecione um produto" 
+                [filter]="true" 
+                filterBy="name" 
+                [virtualScroll]="true" 
+                [virtualScrollItemSize]="38"   
+                (onChange)="onProductSelect($event)"
+              />
+          </div>
+
+            <div class="form-field">
+              <label for="dateSale" class="font-semibold">Data da Venda<span class="required">*</span></label>
+              <p-calendar 
+              [iconDisplay]="'input'" 
+              [showIcon]="true" 
+              [panelStyle]="{ 'transform': 'scale(0.7)'}" 
+              formControlName="dateSale"
+              [inputStyle]="{
+                width: '384px'
+              }">
+          </p-calendar>
+          </div>
+
+            <div class="form-field">
+                <label for="details" class="font-semibold">Detalhes/Müşteri</label>
+                <input pInputText formControlName="details" id="details" autocomplete="off" />
+            </div>
+            
+            <div class="form-field">
+              <label for="quantity" class="font-semibold">Quantidade<span class="required">*</span></label>
+              <p-inputNumber formControlName="quantity" id="quantity" [style]="{ 'width': '100%' }" ></p-inputNumber>
+           </div>
+
+            <div class="form-field">
+              <label for="pay" class="font-semibold">Paralı?</label>
+              <p-dropdown [options]="handlers.situation"  formControlName="paySelect" 
+              [style]="{'width': '100%', 'text-align': 'left'}"
+              id="pay" optionLabel="name" placeholder="Selecione a situação"></p-dropdown>
+            </div>
+
+            <div class="form-field">
+              <label for="price" class="font-semibold">Valor (R$) <span class="required">*</span></label>
+              <p-inputNumber id="price" formControlName="price"  mode="currency" currency="BRL" locale="pt-BR"  [style]="{ 'width': '100%' }" ></p-inputNumber>
+            </div>   
+            @if(!!isViewing){
+              <div class="form-field">
+                <label for="createDate" class="font-semibold">Data de criação</label>
+                <input  pInputText id="createDate" formControlName="createDate" type="text" autocomplete="off" />
+              </div>
+              <div class="form-field">
+                <label for="editDate" class="font-semibold">Data da edição</label>
+                <input  pInputText id="editDate" formControlName="editDate" type="text" autocomplete="off" />
+              </div> 
+            }    
+          </div>
+        @if(!isViewing){
+          <div class="footer-dialog">
+            <p-button pRipple [label]="isEditMode ? 'Atualizar' : 'Salvar'" severity="success" type="submit" [loading]="loadingButton" />
+            <p-button pRipple label="Cancelar" severity="danger" (click)="cancel()"/>
+          </div>
+        }
+      </form>    
+    </p-dialog>
+
+    <p-table #dt [value]="sales" [rows]="10" [paginator]="true"
+      [globalFilterFields]="['name', 'dateSale', 'details', 'status','quantity','price', 'dateCreate', 'pay']"
+      [tableStyle]="{ 'min-width': '75rem' }" 
+      [(selection)]="selectedSales" 
+      [rowHover]="true" 
+      dataKey="id"
+      [rows]="5"
+      [loading]="loadingTable"
+      [rowsPerPageOptions]="[5, 10, 15, 20]"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros" 
+      [showCurrentPageReport]="true">
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="dateSale">
+            Data da Venda <p-sortIcon field="dateSale"></p-sortIcon>
+          </th>
+          <th pSortableColumn="dateCreate">
+            Oluşturulma Tarihi <p-sortIcon field="dateCreate"></p-sortIcon>
+          </th>
+          <th pSortableColumn="name">
+            Nome <p-sortIcon field="name"></p-sortIcon>
+          </th>
+          <th pSortableColumn="details" style="min-width:10rem">
+            Detalhes/Müşteri <p-sortIcon field="details"></p-sortIcon>
+          </th>
+          <th pSortableColumn="quantity">
+            Qtd <p-sortIcon field="quantity"></p-sortIcon>
+          </th>
+          <th pSortableColumn="price">
+            Valor <p-sortIcon field="price"></p-sortIcon>
+          </th>
+          <th pSortableColumn="pay" style="min-width:1rem">
+            Paralı <p-sortIcon field="pay"></p-sortIcon>
+          </th>
+          <th>Ações</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-sale>
+        <tr>
+          <td>
+            {{ sale.dateSale  | date: 'dd/MM/yyyy'  }}
+          </td>
+          <td>
+            {{ sale.dateCreate  | date: 'dd/MM/yyyy HH:mm:ss' }}
+          </td>
+          <td>
+            {{ sale.name }}
+          </td>
+          <td>
+            {{ sale.details }}
+          </td>
+          <td>
+            {{ sale.quantity }}
+          </td>
+          <td>
+            {{ handlers.formartValor(sale.price) }}
+          </td>
+          <td>
+            <p-tag [value]="sale.pay ? 'Paralı' : 'Askıda (TL)'" [severity]="sale.pay ? 'success' : 'danger'"></p-tag>
+          </td>
+          <td>
+            <p-button pRipple icon="pi pi-eye" class="mr-2" [rounded]="true" [outlined]="true" severity="info"
+            [style]="{
+             'margin':'5px',
+             height: '40px',
+             width: '40px'
+            }" (click)="getSaleById(sale.id)"></p-button>
+            <p-button pRipple icon="pi pi-pencil" class="mr-2" [rounded]="true" [outlined]="true" severity="success"
+            [style]="{
+             'margin':'5px',
+             height: '40px',
+             width: '40px'
+            }" (click)="dialogEdit(sale)"></p-button>
+            <p-button pRipple icon="pi pi-trash" severity="danger" [rounded]="true" [outlined]="true"
+            [style]="{
+              'margin':'5px',
+              height: '40px',
+              width: '40px'
+             }" (click)="deleteSale(sale.id)"></p-button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="8">{{messageTable}}</td>
+        </tr>
+      </ng-template>
+    </p-table>  
+  </div>
+  <p-confirmDialog [style]="{ width: '450px' }" />
+</div>
